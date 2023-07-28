@@ -1,5 +1,7 @@
 <template>
-  <HelloWorld />
+  <div>
+    Homepage
+  </div>
 </template>
 
 <script lang="ts" setup>

@@ -90,30 +90,14 @@
               <v-list-item-subtitle>
                 {{ item.description }}
               </v-list-item-subtitle>
-
               <div>
-                HP
+                Haltbarkeit
                 <v-btn
                   size="small"
                   icon="mdi-minus"
                   color="secondary"
                 ></v-btn>
-                {{item.uses}} / {{item.max}}
-                <v-btn
-                  size="small"
-                  icon="mdi-plus"
-                  color="secondary"
-                ></v-btn>
-              </div>
-
-              <div>
-                MP
-                <v-btn
-                  size="small"
-                  icon="mdi-minus"
-                  color="secondary"
-                ></v-btn>
-                4 / 6
+                {{ item.uses }} / {{ item.max }}
                 <v-btn
                   size="small"
                   icon="mdi-plus"

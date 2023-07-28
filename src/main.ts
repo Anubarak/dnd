@@ -5,16 +5,43 @@
  */
 
 // Components
-import App from './App.vue'
-
+import App from './App.vue';
 // Composables
-import { createApp } from 'vue'
-
+import {createApp} from 'vue';
 // Plugins
-import { registerPlugins } from '@/plugins'
+import {registerPlugins} from '@/plugins';
+import {useUserStore} from '@/store/userStore';
+import {setRouter, setUserStore} from '@/Container';
+import {getVuetify} from '@/plugins/vuetify';
+import router from '@/router';
+import 'dayjs/locale/de';
+import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 
-const app = createApp(App)
+dayjs.locale('de');
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
-registerPlugins(app)
+const init = async () => {
 
-app.mount('#app')
+  const app = createApp(App);
+
+
+  registerPlugins(app);
+
+  setRouter(router);
+  const userStore = useUserStore();
+
+  setUserStore(userStore);
+  if (userStore.accessToken) {
+    await userStore.fetchIdentity();
+  }
+
+
+  app.use(router);
+  app.use(getVuetify(userStore.user));
+  app.mount('#app');
+};
+
+init();
