@@ -4,7 +4,7 @@
 import {ref} from 'vue';
 import {useUserStore} from '@/store/userStore';
 import {useRouter} from 'vue-router';
-import {showError} from '@/services/Utils';
+import {showError, showMessage} from '@/services/Utils';
 import {useAlert} from '@/compositions/AlertComposition';
 import CenterStuff from '@/components/CenterStuff.vue';
 
@@ -12,16 +12,15 @@ const {messages} = useAlert();
 const loading = ref(false);
 const userName = ref('');
 const pw = ref('');
+const email = ref('');
 const userStore = useUserStore();
 const router = useRouter();
 const submit = async () => {
   loading.value = true;
   try {
-    const res = await userStore.login(userName.value, pw.value);
-    console.log(res);
-
+    await userStore.login(userName.value, pw.value);
     router.push(userStore.getRedirectRoute())
-      .catch(err => {
+      .catch(() => {
       });
   } catch (e) {
     showError(e);
@@ -30,6 +29,20 @@ const submit = async () => {
 
   }
 };
+
+const submitReg = async () => {
+  loading.value = true;
+  try {
+    await userStore.register(userName.value, pw.value, email.value);
+    showMessage('Warte auf freischaltung');
+  } catch (e) {
+    showError(e);
+  } finally {
+    loading.value = false;
+
+  }
+};
+const showRegisterForm = ref(false);
 
 </script>
 
@@ -54,7 +67,9 @@ const submit = async () => {
           style="width: 100%"
           alt="Logo">
 
-        <v-form validate-on="submit lazy"
+        <v-form
+          v-if="showRegisterForm === false"
+          validate-on="submit lazy"
                 @submit.prevent="submit">
           <v-text-field
             v-model="userName"
@@ -70,6 +85,49 @@ const submit = async () => {
             :loading="loading"
             type="submit"
             color="primary"
+            block
+            class="mt-2"
+            text="Einloggen"
+          ></v-btn>
+          <v-btn
+            @click="showRegisterForm = true"
+            color="secondary"
+            block
+            class="mt-2"
+            text="Registrieren"
+          ></v-btn>
+        </v-form>
+
+        <v-form
+          v-if="showRegisterForm === true"
+          validate-on="submit lazy"
+          @submit.prevent="submitReg">
+          <v-text-field
+            v-model="userName"
+            label="Benutzername"
+          ></v-text-field>
+
+          <v-text-field
+            v-model="email"
+            label="Email"
+          ></v-text-field>
+
+          <v-text-field
+            v-model="pw"
+            label="Passwort"
+          ></v-text-field>
+
+          <v-btn
+            :loading="loading"
+            type="submit"
+            color="primary"
+            block
+            class="mt-2"
+            text="Registrieren"
+          ></v-btn>
+          <v-btn
+            @click="showRegisterForm = false"
+            color="secondary"
             block
             class="mt-2"
             text="Einloggen"

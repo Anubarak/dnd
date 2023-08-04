@@ -1,7 +1,7 @@
 <template>
   <v-list-item>
     <v-list-item-title class="text-h6">
-      Goteishi DnD
+      <RouterLink :to="{name: 'Home'}">Goteishi DnD</RouterLink>
     </v-list-item-title>
     <v-list-item-subtitle>
       Characters
@@ -19,7 +19,7 @@
 
     <v-list-subheader>Formulare</v-list-subheader>
     <MenuItemComponent
-      v-for="(item, i) in adminItems"
+      v-for="(item, i) in adminItems.filter(el => el.requiresAdmin === false || userStore.user.hasAdminPermissions)"
       :key="i"
       :item="item"
     ></MenuItemComponent>
@@ -57,14 +57,13 @@
         setup>
 
 
-import {computed, ref} from 'vue';
+import {computed} from 'vue';
 import {useCharacterStore} from '@/store/characterStore';
-import {showError, showMessage} from '@/services/Utils';
+import {showError} from '@/services/Utils';
 import {useUserStore} from '@/store/userStore';
 import {useRouter} from 'vue-router';
 import MenuItemComponent from '@/components/MenuItem.vue';
 import {MenuItem} from '@/Types';
-
 
 const characterStore = useCharacterStore();
 const menuItems = computed(() => {
@@ -79,6 +78,7 @@ const menuItems = computed(() => {
       avatar: character.imageUrl,
       icon: 'mdi-account',
       divider: false,
+      requiresAdmin: false,
       type: 'char',
       route: {
         name: 'character',
@@ -103,6 +103,7 @@ const adminItems = computed(() => {
     title: 'Char Erstellen',
     id: null,
     avatar: null,
+    requiresAdmin: false,
     icon: 'mdi-trophy',
     divider: false,
     type: 'none',
@@ -114,6 +115,7 @@ const adminItems = computed(() => {
   items.push({
     title: 'Item Erstellen',
     id: null,
+    requiresAdmin: true,
     avatar: null,
     icon: 'mdi-bow-arrow',
     divider: false,
@@ -128,6 +130,7 @@ const adminItems = computed(() => {
     title: 'Gegner Vorlagen',
     id: null,
     avatar: null,
+    requiresAdmin: true,
     icon: 'mdi-google-downasaur',
     divider: false,
     type: 'none',
@@ -139,6 +142,7 @@ const adminItems = computed(() => {
     title: 'Alle Charactere',
     id: null,
     divider: true,
+    requiresAdmin: true,
     avatar: null,
     icon: 'mdi-account-convert',
     type: 'none',

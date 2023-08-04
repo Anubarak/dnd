@@ -1,10 +1,10 @@
 import {ref} from 'vue';
 
-interface Message {
-  message: string,
-  type: 'error' |'success',
-  id: number
-}
+// interface Message {
+//   message: string,
+//   type: 'error' |'success',
+//   id: number
+// }
 
 let id = 0;
 

@@ -1,5 +1,5 @@
 import {AxiosError} from 'axios';
-import {ModelErrors} from '@/Types';
+import {Character, ModelErrors} from '@/Types';
 import {useAlert} from '@/compositions/AlertComposition';
 
 
@@ -20,11 +20,16 @@ export const showMessage = (message: string) => {
 
 
 const getMessageFromError = (error: AxiosError<ModelErrors | string> | string | unknown): string | null => {
+  if(error === null || typeof error === 'undefined'){
+    console.log('error null', error);
+    return 'Ein unbekannter Fehler ist aufgetreten.';
+  }
+
   if (typeof error === 'string') {
     return error;
   }
 
-  let data = error?.response?.data ?? null;
+  const data = error?.response?.data ?? null;
   if (data !== null) {
     if (typeof data === 'string') {
       return data;
@@ -45,8 +50,8 @@ const getMessageFromError = (error: AxiosError<ModelErrors | string> | string | 
     return error.toString();
   }
 
-  if (typeof error.message !== 'undefined') {
-    return error.message;
+  if (typeof error === 'object' && 'message' in error && typeof error.message !== 'undefined') {
+    return error.message as string;
   }
 
   return '';
@@ -71,4 +76,21 @@ const getFirstString = (object: string | string[] | ModelErrors): string | null 
   }
 
   return null;
+}
+
+
+export const getHeartIconForChar = (char: Character) => {
+  if(!char){
+    return 'mdi-heart'
+  }
+
+  if(char.hp === char.currentHp) {
+    return 'mdi-heart'
+  }
+
+  if(char?.currentHp === 0) {
+    return 'mdi-heart-broken-outline'
+  }
+
+  return 'mdi-heart-half-full';
 }

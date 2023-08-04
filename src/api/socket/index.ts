@@ -74,13 +74,13 @@ class Socket {
       characterStore.setItems(data);
     })
 
-    const events = [
+    //const events = [
       // {name: 'BookingSlot', model: BookingSlot},
       // {name: 'BookingSlotTemplate', model: BookingSlotTemplate},
       // {name: 'BookingDay', model: BookingDay},
       // {name: 'WellzoneMessage', model: WellzoneMessage},
       // {name: 'Locker', model: Locker}
-    ];
+    //];
 
     // events.forEach(({name, model}) => {
     //     if (this.socket !== null) {
@@ -120,7 +120,7 @@ class Socket {
     this.token = token;
   }
 
-  reconnect(accessToken = null) {
+  reconnect() {
     if (this.socket.connected === false) {
       this.socket.connect();
     }

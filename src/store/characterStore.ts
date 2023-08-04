@@ -2,7 +2,6 @@ import {defineStore} from 'pinia';
 import {Character} from '@/Types';
 import {computed, ref} from 'vue';
 import apiClient from '@/api/Client';
-import {AxiosResponse} from 'axios';
 
 const characters = ref<Character[]>([]);
 export const useCharacterStore = defineStore('characters', () => {
@@ -67,6 +66,16 @@ export const useCharacterStore = defineStore('characters', () => {
     return updateStore(res.data);
   };
 
+  const switchItem = async (sourceId: number, targetId: number, itemId: number) => {
+    await apiClient.post<Character>('/characters/switch-item', {
+      sourceId,
+      targetId,
+      itemId,
+    });
+
+    return true;
+  };
+
   const updateItem = async (id: number, itemId: number, hp: number) => {
     const res = await apiClient.post<Character>('/characters/update-item', {
       id: id,
@@ -114,6 +123,7 @@ export const useCharacterStore = defineStore('characters', () => {
     deleteItem,
     updateItem,
     setCharacters,
-    createEnemyFromTemplate
+    createEnemyFromTemplate,
+    switchItem
   };
 });

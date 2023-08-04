@@ -1,29 +1,44 @@
 <script setup
         lang="ts">
 interface Props {
-  name: string,
+  name?: string|null,
   min: number
   max?: number | null
   loading: boolean,
   allowEdit?: boolean
+  icon?: string|null
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   max: null,
-  allowEdit: true
+  allowEdit: true,
+  name: null,
+  icon: null
 });
 
 const cols = 3;
 
 const emit = defineEmits<{
   (e: 'update', value: number): void
+  (e: 'click:value', event: PointerEvent): void
 }>();
+
+
+const openSlider = async (event: PointerEvent) => {
+  event.stopPropagation();
+  event.preventDefault();
+
+  emit('click:value', event);
+}
+
 </script>
 
 <template>
   <v-col
     :cols="cols">
     {{ name }}
+
+    <v-icon v-if="icon" :icon="icon"></v-icon>
   </v-col>
 
 
@@ -40,6 +55,7 @@ const emit = defineEmits<{
   </v-col>
 
   <v-col
+    @click="openSlider"
     style="text-align: center;vertical-align: middle;"
     :cols="cols">
     {{ min }}
@@ -47,7 +63,6 @@ const emit = defineEmits<{
       / {{ max }}
     </template>
   </v-col>
-
 
   <v-col
     :cols="cols">

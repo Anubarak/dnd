@@ -24,53 +24,105 @@
 
     <default-view/>
 
+
     <v-dialog
-      @update:modelValue="onChangeDialog"
-      v-model="isOpen"
+      :width="dialogWidth"
+      v-model="isImageOpen"
     >
       <v-card>
         <v-card-text>
-          wer hat getötet?
-          <v-select
-            v-model="killerId"
-            ref="autoComplete"
-            item-title="name"
-            item-value="id"
-            clearable
-            label="Chracter auswählen"
-            :items="characterStore.heros"
-            variant="solo"
-          ></v-select>
+          <v-img
+            class="mx-auto"
+            :width="mobile? 300 : 600"
+            cover
+            :src="imageUrl"
+          ></v-img>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" block @click="closeDialog(killerId)">Auswählen</v-btn>
+          <v-btn color="primary" block @click="isImageOpen = false">schließen</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog
+      :width="dialogWidth"
+      @update:modelValue="onChangeDialog($event, 'char')"
+      v-model="dialogState.char"
+    >
+      <v-card v-if="dialogState.char && dialogData">
+        <v-card-text>
+          {{ dialogData.title }}
+          <CharacterSelect
+            v-model="dialogData.value"
+            variant="solo"
+          ></CharacterSelect>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" block @click="closeDialog('char', dialogData)">Auswählen</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog
+      :width="dialogWidth"
+      @update:modelValue="onChangeDialog($event, 'bar')"
+      v-model="dialogState.bar"
+    >
+      <v-card v-if="dialogState.bar && dialogData">
+        <v-card-title>
+          {{ dialogData.title }}
+        </v-card-title>
+        <v-card-text>
+          <v-slider
+            v-model="dialogData.value"
+            :min="dialogData.min"
+            :max="dialogData.max"
+            :step="1"
+            thumb-label="always"
+          ></v-slider>
+
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" block @click="closeDialog('bar', dialogData)">Speichern</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
   </v-app>
 </template>
 
 <script lang="ts"
         setup>
 import DefaultView from './View.vue';
-import {ref} from 'vue';
+import {computed, ref} from 'vue';
 import MenuContent from '@/layouts/default/MenuContent.vue';
 import {useAlert} from '@/compositions/AlertComposition';
 import {useDialog} from '@/compositions/DialogComposition';
 import {useCharacterStore} from '@/store/characterStore';
+import {useDisplay} from 'vuetify';
+import {DailogType} from '@/Types';
+import CharacterSelect from '@/components/CharacterSelect.vue';
 
 const characterStore = useCharacterStore();
 const {messages} = useAlert();
-const killerId = ref(null);
-const {isOpen, closeDialog} = useDialog();
+const {dialogState, dialogData, closeDialog, isImageOpen, imageUrl} = useDialog();
 const drawer = ref(false);
 
-const onChangeDialog = (event: boolean) => {
+const onChangeDialog = (event: boolean, type: DailogType) => {
   if(!event) {
-    closeDialog(null);
-    killerId.value = null;
+    closeDialog(type, null);
   }
 }
+
+
+const { mobile } = useDisplay();
+const dialogWidth = computed(() => {
+  if(mobile.value){
+    return '90%';
+  }
+  return '50%';
+})
+
 </script>
 
 
@@ -79,6 +131,7 @@ const onChangeDialog = (event: boolean) => {
   top: 50px;
   transform: translate(-50%, -50%);
   margin: 0 auto;
+  width: 150%
 }
 .notificationContainer {
   left: 50%;

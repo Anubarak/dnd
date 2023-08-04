@@ -6,7 +6,6 @@ import {disconnect, joinRooms} from '@/api/socket/Manager';
 import {User, UserIdentityResponse} from '@/Types';
 import apiClient from '@/api/Client';
 import dayjs from 'dayjs';
-import {getRouter} from '@/Container';
 
 export const useUserStore = defineStore('user', () => {
 
@@ -105,12 +104,26 @@ export const useUserStore = defineStore('user', () => {
     });
   };
 
+  const register = (userName: string | null, password: string | null, email: string|null) => {
+    return new Promise((resolve, reject) => {
+      apiClient.post('users/register', {userName, password, email})
+        .then(res => {
+          resolve(handleIdentityResponse(res));
+        })
+        .catch(err => {
+          reject(err);
+        });
+    });
+  };
+
 
   const logout = () => {
     handleLogout();
   };
 
-  const can = (permission: string) => user.value && (user.value?.permissions.includes(permission) || user.value.permissions?.includes('admin'));
+  const can = (permission: string) => user.value &&
+    typeof user.value?.permissions!== 'undefined'&&
+    (user.value?.permissions.includes(permission) || user.value.permissions?.includes('admin'));
 
   const getRedirectRoute = (): RouteLocationNormalized | RouteLocationRaw => redirectRoute ?? {'name': 'Home'};
 
@@ -127,5 +140,6 @@ export const useUserStore = defineStore('user', () => {
     logout,
     getRedirectRoute,
     updateUser,
+    register
   };
 });

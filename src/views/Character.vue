@@ -4,11 +4,12 @@
 import {computed, onMounted, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import {useCharacterStore} from '@/store/characterStore';
-import {showError, showMessage} from '@/services/Utils';
+import {getHeartIconForChar, showError, showMessage} from '@/services/Utils';
 import {useItemStore} from '@/store/itemStore';
-import {Character} from '@/Types';
+import {Character, Item, UsedItem} from '@/Types';
 import AttributeBtns from '@/components/AttributeBtns.vue';
 import {useDialog} from '@/compositions/DialogComposition';
+import CharacterItem from '@/components/CharacterItem.vue';
 
 interface Props {
   character?: Character | null;
@@ -45,25 +46,34 @@ const loadings = ref({
   'kills': false,
   'addItem': false,
   'deleteLoading': 0,
+  'switchLoading': 0,
   'deleteChar': false,
   'hpLoading': 0,
+  'armor': false,
+  'movement': false,
 });
 
-const {openDialog} = useDialog();
+const {openDialog, openImage} = useDialog();
 
-const changeValue = async (attribute: 'xp' | 'kills' | 'currentHp' | 'currentMp', direction: number) => {
+const changeValue = async (attribute: 'armor' | 'movement' | 'xp' | 'kills' | 'currentHp' | 'currentMp', direction: number, fixedValue: boolean = false) => {
   if (loadings.value[attribute] || !char.value || !char.value.id) {
     return false;
   }
 
   loadings.value[attribute] = true;
 
-  const newValue = char.value[attribute] + direction;
+  const newValue = fixedValue === false ? char.value[attribute] + direction : direction;
   try {
     let killerId: number | null = null;
-    if (newValue === 0 && char.value[attribute] === 1 &&
+    if (newValue === 0 &&
       attribute === 'currentHp' && char.value?.isEnemy) {
-      killerId = await openDialog();
+      const res = await openDialog<{value: number|null, title: string}>('char', {
+        value: null,
+        title: 'wer hat getötet?'
+      });
+      if(res && res.value){
+        killerId = res.value
+      }
     }
 
     await characterStore.updateValue(char.value.id, attribute, newValue);
@@ -129,15 +139,6 @@ const addItem = async () => {
   }
 };
 
-interface UsedItem {
-  id: number,
-  title: string,
-  icon: string | null,
-  hp: number | null,
-  currentHp: number | null,
-  description: string
-}
-
 const items = computed(() => {
   const i: UsedItem[] = [];
   char.value?.items.forEach(charItem => {
@@ -152,12 +153,47 @@ const items = computed(() => {
       icon: item.imageUrl,
       hp: item.hp,
       currentHp: charItem.uses,
-      description: item.description
+      description: item.description,
+      type: item.type,
+      dices: item.dices,
+      specialDices: item.specialDices,
+      realItem: item
     });
   });
 
-  return i;
+  return i.sort((a, b) => {
+    if (a.title >= b.title) {
+      return -1;
+    }
+    return 1;
+  });
 });
+
+const switchItem = async (item: UsedItem) => {
+  if (!char.value || !char.value.id) {
+    return false;
+  }
+
+  const res = await openDialog<{value: number|null}>('char', {
+    title: 'Wem willst du das Item geben?',
+    value: null,
+  });
+  if(!res || !res.value){
+    return false;
+  }
+  const value = res.value;
+
+  loadings.value.switchLoading = item.id;
+
+  try {
+    await characterStore.switchItem(char.value.id, value, item.id);
+    showMessage('Item getauscht');
+  } catch (err) {
+    showError(err);
+  } finally {
+    loadings.value.switchLoading = 0;
+  }
+}
 
 const deleteItem = async (item: UsedItem) => {
   if (!char.value || !char.value.id) {
@@ -183,9 +219,34 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
     return false;
   }
 
+  let usedMana = 0;
+  if(item.type === 'spell' && direction < 0){
+    const barRes = await openDialog('bar', {
+      title: 'Manaverbrauch festlegen',
+      min: 0,
+      max: (item.realItem?.manaCostSupport ?? 0) + 1,
+      value: (item.realItem?.manaCostSupport ?? 1)
+    })
+    if(!barRes){
+      showError('Manaverbrauch benötigt')
+      return false;
+    }
+
+    usedMana = barRes.value;
+
+    const restMana = char.value.currentMp - usedMana;
+    if(restMana < 0){
+      showError(`Du hast nicht genügend mana... ${char.value.currentMp} - ${usedMana} = ${restMana}`);
+      return false;
+    }
+  }
+
   loadings.value.hpLoading = item.id;
   try {
     await characterStore.updateItem(char.value.id, item.id, item.currentHp + direction);
+    if(usedMana){
+      await characterStore.updateValue(char.value.id, 'currentMp', char.value.currentMp - usedMana);
+    }
   } catch (err) {
     showError(err);
   } finally {
@@ -193,6 +254,57 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
   }
 };
 
+const heartIcon = computed(() => {
+  return char.value ? getHeartIconForChar(char.value) : '';
+});
+
+const imageUrl = computed(() => {
+  if (!char.value) {
+    return '';
+  }
+
+  if (char.value.imageUrl) {
+    return char.value.imageUrl;
+  }
+
+  const imageId = char.value?.imageId ?? null;
+  if (imageId !== null) {
+    const image = itemStore.itemImages.find(el => el.id === imageId) || null;
+    if (image) {
+      return image.url;
+    }
+  }
+
+  return '/avatar.jpg';
+});
+
+const openSlider = async (type: 'currentHp' | 'currentMp') => {
+  let data;
+  let oldValue = 0;
+  if (type === 'currentHp') {
+    data = {
+      min: 0,
+      title: 'HP anpassen',
+      max: char.value?.hp ?? 0,
+      value: char.value?.currentHp ?? 0,
+    };
+
+    oldValue = char.value?.currentHp ?? 0;
+  } else {
+    oldValue = char.value?.currentMp ?? 0;
+    data = {
+      min: 0,
+      title: 'MP anpassen',
+      max: char.value?.mp ?? 0,
+      value: char.value?.currentMp ?? 0,
+    };
+  }
+
+  const res = await openDialog('bar', data);
+  if (res && oldValue && res.value !== oldValue) {
+    await changeValue(type, res.value, true);
+  }
+};
 </script>
 
 <template>
@@ -210,7 +322,9 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
             <v-list-item>
               <template v-slot:prepend>
                 <v-avatar
-                  :image="char.imageUrl ?? '/avatar.jpg'"
+                  v-if="imageUrl"
+                  @click="openImage(char.imageUrlLarge ?? imageUrl)"
+                  :image="imageUrl"
                   :size="avatarSize"></v-avatar>
               </template>
 
@@ -219,7 +333,6 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
               <v-list-item-subtitle>
                 {{ char.description }}
               </v-list-item-subtitle>
-
 
               <v-container
                 style="float:left;max-width: 500px"
@@ -230,7 +343,8 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
                   <AttributeBtns
                     :min="char.currentHp"
                     :max="char.hp as number"
-                    name="HP"
+                    :icon="heartIcon"
+                    @click:value="openSlider('currentHp')"
                     @update="changeValue('currentHp', $event)"
                     :loading="loadings.currentHp"
                   ></AttributeBtns>
@@ -242,6 +356,7 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
                     :min="char.currentMp"
                     :max="char.mp"
                     name="MP"
+                    @click:value="openSlider('currentMp')"
                     @update="changeValue('currentMp', $event)"
                     :loading="loadings.currentMp"
                   ></AttributeBtns>
@@ -263,11 +378,34 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
                   <AttributeBtns
                     :min="char.kills ?? 0"
                     :allow-edit="editXp === true"
-                    name="Kills"
+                    icon="mdi-grave-stone"
                     @update="changeValue('kills', $event)"
                     :loading="loadings.kills"
                   ></AttributeBtns>
                 </v-row>
+                <v-row
+                  v-if="allowEdit"
+                  no-gutters>
+                  <AttributeBtns
+                    :min="char.armor ?? 0"
+                    :allow-edit="true"
+                    icon="mdi-shield-sword-outline"
+                    @update="changeValue('armor', $event)"
+                    :loading="loadings.armor"
+                  ></AttributeBtns>
+                </v-row>
+                <v-row
+                  v-if="allowEdit"
+                  no-gutters>
+                  <AttributeBtns
+                    :min="char.movement?? 0"
+                    :allow-edit="true"
+                    icon="mdi-foot-print"
+                    @update="changeValue('movement', $event)"
+                    :loading="loadings.movement"
+                  ></AttributeBtns>
+                </v-row>
+
               </v-container>
               <v-divider/>
             </v-list-item>
@@ -290,85 +428,80 @@ const changeItemHp = async (item: UsedItem, direction: number) => {
               </v-btn>
 
             </template>
-
-            <v-list-item
-              v-if="allowEdit && !char.isEnemy">
-              <v-autocomplete
-                v-model="selectedItemId"
-                ref="autoComplete"
-                item-title="title"
-                item-value="id"
-                clearable
-                label="Item hinzufügen"
-                :items="itemStore.items"
-                variant="solo"
-              ></v-autocomplete>
-
-              <v-btn
-                @click="addItem"
-                :loading="loadings.addItem"
-                size="small"
-                color="primary"
-              >Item hinzufügen
-              </v-btn>
-            </v-list-item>
           </v-list>
         </v-card>
       </v-col>
     </v-row>
 
-    <v-row v-if="items.length > 0">
+    <v-row>
       <v-col>
-
         <v-expansion-panels>
           <v-expansion-panel
             title="Items">
             <v-expansion-panel-text>
-              <v-card
-                v-for="(item, i) in items"
-                :key="i">
+              <template
+                v-if="items.length > 0 && char">
+                <div
+                  v-for="itemType in itemStore.itemTypes"
+                  :key="itemType.id"
+                >
+                  <template v-if="items.filter(el => el.type === itemType.id).length > 0">
+                    <v-card v-if="!char.isEnemy">
+                      <v-card-title>
+                        {{ itemType.name }}
+                      </v-card-title>
+                    </v-card>
+                    <CharacterItem
+                      v-for="(item, i) in items.filter(el => el.type === itemType.id)"
+                      :key="i"
+                      :item="item"
+                      :switch-loading="loadings.switchLoading === item.id"
+                      :delete-loading="loadings.deleteLoading === item.id"
+                      :hp-loading="loadings.hpLoading === item.id"
+                      @switch-item="switchItem(item)"
+                      @delete="deleteItem(item)"
+                      @update-hp="changeItemHp(item, $event)"
+                    ></CharacterItem>
+                  </template>
+                </div>
+              </template>
 
+              <v-card v-if="allowEdit && char && !char.isEnemy">
                 <v-card-title>
-                  <v-avatar
-                    size="50"
-                    :image="item.icon ?? '/placeholder.jpg'"></v-avatar>
-                  {{ item.title }}
+                  Item hinzufügen
                 </v-card-title>
 
-                <v-card-subtitle>
-                  {{ item.description }}
-                </v-card-subtitle>
+                <v-card-text>
+                  <v-autocomplete
+                    v-model="selectedItemId"
+                    ref="autoComplete"
+                    item-title="title"
+                    item-value="id"
+                    clearable
+                    label="Item hinzufügen"
+                    :items="itemStore.items"
+                    variant="solo"
+                  >
+                    <template v-slot:item="{ props, item }: {props: any, item: {raw: Item}}">
+                      <v-list-item
+                        v-bind="props"
+                        :prepend-avatar="item?.raw?.imageUrl"
+                        :subtitle="item?.raw?.description"
+                        :title="item?.raw?.title"
+                      ></v-list-item>
+                    </template>
+                  </v-autocomplete>
+                </v-card-text>
 
                 <v-card-actions>
                   <v-btn
-                    @click="deleteItem(item)"
-                    :loading="loadings.deleteLoading === item.id"
+                    @click="addItem"
+                    :loading="loadings.addItem"
                     size="small"
-                    icon="mdi-trash-can"
                     color="primary"
-                  ></v-btn>
-
-                  <div v-if="item.currentHp && item.hp !== null">
-                    HP
-                    <v-btn
-                      @click="changeItemHp(item, -1)"
-                      :loading="loadings.hpLoading === item.id"
-                      size="small"
-                      icon="mdi-minus"
-                      color="primary"
-                    ></v-btn>
-                    {{ item.currentHp }} / {{ item.hp }}
-                    <v-btn
-                      @click="changeItemHp(item, 1)"
-                      :loading="loadings.hpLoading === item.id"
-                      size="small"
-                      icon="mdi-plus"
-                      color="primary"
-                    ></v-btn>
-                  </div>
-
+                  >Item hinzufügen
+                  </v-btn>
                 </v-card-actions>
-                <v-divider/>
               </v-card>
             </v-expansion-panel-text>
           </v-expansion-panel>

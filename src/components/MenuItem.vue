@@ -4,6 +4,7 @@ import {MenuItem} from '@/Types';
 import {ref} from 'vue';
 import {showError, showMessage} from '@/services/Utils';
 import {useCharacterStore} from '@/store/characterStore';
+import {useRouter} from 'vue-router';
 
 interface Props {
   item: MenuItem
@@ -12,7 +13,9 @@ interface Props {
 const characterStore = useCharacterStore();
 const props = defineProps<Props>();
 const loading = ref(false);
-const deleteItem = async () => {
+const deleteItem = async (e: PointerEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
   if(!props.item.id){
     return false;
   }
@@ -33,43 +36,50 @@ const deleteItem = async () => {
   }
 };
 
+const router = useRouter();
+const routeTo = () => {
+  router.push(props.item.route);
+}
+
 </script>
 
 <template>
-  <v-list-item
-    :value="item"
-    color="primary"
-  >
-    <template v-slot:prepend>
-      <v-avatar v-if="item.avatar"
-                size="25"
-                :image="item.avatar">
+  <RouterLink :to="item.route">
+    <v-list-item
+      :value="item"
+      color="primary"
+    >
+      <template v-slot:prepend>
+        <v-avatar v-if="item.avatar"
+                  size="25"
+                  style="margin-right: 31px;"
+                  :image="item.avatar">
 
-      </v-avatar>
-      <v-icon v-else-if="item.icon"
-              :icon="item.icon"></v-icon>
-    </template>
+        </v-avatar>
+        <v-icon v-else-if="item.icon"
+                :icon="item.icon"></v-icon>
+      </template>
 
-    <v-list-item-title>
-      <RouterLink :to="item.route">
+      <v-list-item-title>
         {{ item.title }}
-      </RouterLink>
 
-      <div style="float:right">
-        <v-btn
-          v-if="item.type === 'char' && item.id"
-          :loading="loading"
-          color="primary"
-          @click="deleteItem"
-          size="x-small"
-          icon="mdi-trash-can"
-        ></v-btn>
-      </div>
+        <div style="float:right">
+          <v-btn
+            v-if="item.type === 'char' && item.id"
+            :loading="loading"
+            color="primary"
+            @click="deleteItem"
+            size="x-small"
+            icon="mdi-trash-can"
+          ></v-btn>
+        </div>
 
-    </v-list-item-title>
+      </v-list-item-title>
 
-    <v-divider v-if="item.divider" />
-  </v-list-item>
+      <v-divider v-if="item.divider" />
+    </v-list-item>
+  </RouterLink>
+
 </template>
 
 <style scoped>

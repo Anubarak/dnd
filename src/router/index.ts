@@ -1,13 +1,15 @@
 // Composables
 import {createRouter, createWebHistory, NavigationGuardNext, RouteLocationNormalized} from 'vue-router';
-import {useCharacterStore} from '@/store/characterStore';
 import {getUserStore} from '@/Container';
+import {showError} from '@/services/Utils';
 const routes = [
   {
     path: '/',
+    name: 'default',
     component: () => import('@/layouts/default/Default.vue'),
     meta: {
       requireLogin: true,
+      requireAdmin: false,
     },
     children: [
       {
@@ -15,18 +17,9 @@ const routes = [
         name: 'Home',
         meta: {
           requireLogin: true,
+          requireAdmin: false,
         },
-        redirect: () => {
-          const charStore = useCharacterStore();
-
-          const first = charStore.characters[0] ?? null;
-
-          if(!first){
-            return {name: 'character-form'};
-          }
-
-          return {name: 'character', params: {id: first.id}};
-        },
+        children: [],
         component: () => import('@/views/Home.vue'),
       },
       {
@@ -34,6 +27,7 @@ const routes = [
         name: 'character',
         meta: {
           requireLogin: true,
+          requireAdmin: false,
         },
         component: () => import('@/views/Character.vue'),
       },
@@ -42,14 +36,16 @@ const routes = [
         name: 'character-edit',
         meta: {
           requireLogin: true,
+          requireAdmin: false,
         },
         component: () => import('@/views/CharacterEdit.vue'),
       },
       {
-        path: 'new-item',
+        path: 'item-form/:id?',
         name: 'item-form',
         meta: {
           requireLogin: true,
+          requireAdmin: true,
         },
         component: () => import('@/views/ItemForm.vue'),
       },
@@ -58,12 +54,17 @@ const routes = [
         name: 'character-form',
         meta: {
           requireLogin: true,
+          requireAdmin: false,
         },
         component: () => import('@/views/NewCharacter.vue'),
       },
       {
         path: 'new-enemy',
         name: 'enemy-form',
+        meta: {
+          requireLogin: true,
+          requireAdmin: true,
+        },
         component: () => import('@/views/NewEnemy.vue'),
       },
       {
@@ -71,6 +72,7 @@ const routes = [
         name: 'settings',
         meta: {
           requireLogin: true,
+          requireAdmin: false,
         },
         component: () => import('@/views/Settings.vue'),
       },
@@ -79,6 +81,7 @@ const routes = [
         name: 'characters',
         meta: {
           requireLogin: true,
+          requireAdmin: true,
         },
         component: () => import('@/views/CharacterList.vue'),
       },
@@ -90,6 +93,7 @@ const routes = [
     component: () => import('@/layouts/Login.vue'),
     meta: {
       requireLogin: false,
+      requireAdmin: false,
     }
   },
   {
@@ -98,6 +102,7 @@ const routes = [
     component: () => import('@/views/Error404.vue'),
     meta: {
       requireLogin: false,
+      requireAdmin: false,
     }
   }
 ]
@@ -109,6 +114,7 @@ const router = createRouter({
 
 const beforeEach = async (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const requireLogin = to.meta?.requireLogin ?? false;
+  const requireAdmin = to.meta?.requireAdmin?? false;
 
   const userStore = getUserStore();
   if (to.name === 'login'){
@@ -122,7 +128,14 @@ const beforeEach = async (to: RouteLocationNormalized, from: RouteLocationNormal
 
     try {
       await userStore.requireLogin(to);
-      next();
+
+
+      if(!requireAdmin || userStore.user.hasAdminPermissions){
+        next();
+      } else{
+        showError('Nono... du musst admin sein');
+        next({name: 'Home'});
+      }
     } catch (err) {
       console.log('möp error', err);
       // no currentUser -> redirect to login

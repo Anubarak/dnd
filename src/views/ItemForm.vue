@@ -1,20 +1,49 @@
 <script setup
         lang="ts">
 
-import {ref} from 'vue';
-import {Item} from '@/Types';
+import {computed, ref, watch} from 'vue';
+import {Item, NewItem} from '@/Types';
 import {useItemStore} from '@/store/itemStore';
 import {showError, showMessage} from '@/services/Utils';
+import WeaponList from '@/components/WeaponList.vue';
+import {useRoute} from 'vue-router';
+import DiceSelect from '@/components/DiceSelect.vue';
+import AvatarInput from '@/components/AvatarInput.vue';
+import {useDialog} from '@/compositions/DialogComposition'
+const route = useRoute();
+const itemId = computed(() => {
+  const id = route.params.id;
+  return id ? Number.parseInt(id as string) : null;
+});
+
+watch(itemId, () => {
+  item.value = getLocalItem();
+});
 
 const itemStore = useItemStore();
 const loading = ref(false);
-const item = ref<Item>({
+
+
+const newItem = (): NewItem => ({
   id: null,
   title: '',
   description: '',
   imageUrl: '',
-  hp: 0
+  imageUrlLarge: '',
+  hp: 8,
+  dices: [],
+  specialDices: [],
+  type: 'weapon',
+  manaCostWizzard: 3,
+  manaCostSupport: 3,
 });
+const getLocalItem = (): NewItem => {
+  const c = itemId.value ? (itemStore.items.find(el => el.id === itemId.value) || null) : null;
+
+  return c ? {...c as NewItem} : newItem();
+};
+
+const item = ref<NewItem>(getLocalItem());
 
 const onSubmit = async () => {
   if (loading.value) {
@@ -26,6 +55,7 @@ const onSubmit = async () => {
   try {
     const res = await itemStore.saveItem(item.value as Item);
     showMessage(`${res.title} erfolgreich gespeichert`);
+    item.value = newItem();
   } catch (err) {
     showError(err);
   } finally {
@@ -33,38 +63,17 @@ const onSubmit = async () => {
   }
 };
 
-const onFileChange = (files: File[]) => {
-  const file = files[0] ?? null;
-  if (!file) {
-    item.value.imageUrl = '';
-    return false;
-  }
-
-  const reader = new FileReader();
-  reader.addEventListener(
-    'load',
-    () => {
-      item.value.imageUrl = (reader.result) as string;
-    },
-    false,
-  );
-
-  reader.readAsDataURL(file);
-};
-
+const {openImage} = useDialog();
 </script>
 
 <template>
   <v-form @submit.prevent="onSubmit">
     <v-container>
-      <v-row>
-        <v-file-input
-          @update:model-value="onFileChange"
-          :multiple="false"
-          accept="image/*"
-          prepend-icon=""
-          label="Avatar"></v-file-input>
-      </v-row>
+      <AvatarInput
+        v-model:image-title="item.imageTitle"
+        v-model:id="item.imageId"
+        v-model:url="item.imageUrl"
+      ></AvatarInput>
 
       <v-row>
         <v-text-field
@@ -89,6 +98,45 @@ const onFileChange = (files: File[]) => {
           required
         ></v-text-field>
       </v-row>
+      <v-row>
+        <v-select
+          v-model="item.type"
+          item-title="name"
+          item-value="id"
+          clearable
+          label="Typ"
+          :items="itemStore.itemTypes"
+          variant="solo"
+        ></v-select>
+      </v-row>
+
+      <template v-if="item.type === 'spell'">
+        <v-row>
+          <v-text-field
+            v-model="item.manaCostWizzard"
+            label="Manakosten Zauberer"
+            type="number"
+          ></v-text-field>
+        </v-row>
+        <v-row>
+          <v-text-field
+            v-model="item.manaCostSupport"
+            label="Manakosten Support"
+            type="number"
+          ></v-text-field>
+        </v-row>
+      </template>
+      <v-row>
+        <DiceSelect
+          title="Würfel"
+          v-model="item.dices"/>
+      </v-row>
+
+      <v-row>
+        <DiceSelect
+          title="Mächtiger Angriff"
+          v-model="item.specialDices"/>
+      </v-row>
 
       <v-btn
         :loading="loading"
@@ -106,6 +154,7 @@ const onFileChange = (files: File[]) => {
         <v-card-title>
           <v-avatar
             size="50"
+            @click="openImage(item.imageUrl ?? '/placeholder.jpg')"
             :image="item.imageUrl ?? '/placeholder.jpg'"></v-avatar>
           {{ item.title }}
         </v-card-title>
@@ -116,6 +165,19 @@ const onFileChange = (files: File[]) => {
       </v-card>
     </v-col>
   </v-row>
+
+  <v-container style="padding-bottom: 30px">
+    <v-row>
+      <v-expansion-panels>
+        <v-expansion-panel
+          title="Items">
+          <v-expansion-panel-text>
+            <WeaponList/>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
+    </v-row>
+  </v-container>
 </template>
 
 <style scoped>
