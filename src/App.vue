@@ -2,11 +2,16 @@
   <v-app v-if="loading">
     <v-main>
       <CenterStuff>
-        <v-progress-circular
-          indeterminate
-          color="primary"
-          :size="99"
-          :width="9"></v-progress-circular>
+        <v-layout align-center
+                  justify-center
+                  column
+                  fill-height>
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              :size="99"
+              :width="9"></v-progress-circular>
+        </v-layout>
       </CenterStuff>
     </v-main>
   </v-app>
@@ -43,7 +48,7 @@ onMounted(async () => {
 
 
 const {current} = useTheme();
-const primaryCssColor = computed(() => current?.value?.colors?.primary)
+const primaryCssColor = computed(() => current?.value?.colors?.primary);
 </script>
 
 
@@ -54,7 +59,7 @@ a {
 }
 
 a.router-link-active {
-  color:  v-bind('primaryCssColor')
+  color: v-bind('primaryCssColor')
 }
 
 .character-expansion-panel .v-expansion-panel-text__wrapper {
@@ -68,5 +73,11 @@ a.router-link-active {
 
 .padding-bottom-icon {
   padding-bottom: 15px;
+}
+
+.v-progress-circular {
+  display: block;
+  width: 100px;
+  margin: 0 auto;
 }
 </style>

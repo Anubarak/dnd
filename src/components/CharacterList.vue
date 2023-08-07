@@ -94,37 +94,6 @@ const none = () => {
       </v-col>
     </v-row>
   </v-container>
-
-
-  <!--  <v-expansion-panels-->
-  <!--    v-model="panel"-->
-  <!--    multiple-->
-  <!--  >-->
-  <!--    <v-expansion-panel-->
-  <!--      v-for="char in chars"-->
-  <!--      :key="char.id as number"-->
-  <!--      :value="char.id">-->
-  <!--      <v-expansion-panel-title>-->
-  <!--        <v-sheet class="d-flex flex-wrap" style="width: 100%;">-->
-  <!--          <v-sheet class="flex-1-0 ma-2 pa-2">-->
-  <!--            {{ char.name }}-->
-  <!--          </v-sheet>-->
-  <!--          <v-sheet class="ma-2 pa-2">-->
-  <!--            <v-icon icon="mdi-heart"></v-icon>-->
-  <!--            {{ char.currentHp }} / {{ char.hp }}-->
-  <!--          </v-sheet>-->
-  <!--        </v-sheet>-->
-  <!--      </v-expansion-panel-title>-->
-  <!--      <v-expansion-panel-text class="character-expansion-panel">-->
-  <!--        <Character-->
-  <!--          :avatar-size="avatarSize"-->
-  <!--          :allow-edit="true"-->
-  <!--          :edit-xp="true"-->
-  <!--          :character="char"-->
-  <!--        ></Character>-->
-  <!--      </v-expansion-panel-text>-->
-  <!--    </v-expansion-panel>-->
-  <!--  </v-expansion-panels>-->
 </template>
 
 <style scoped>

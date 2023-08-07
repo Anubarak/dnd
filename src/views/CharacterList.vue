@@ -11,7 +11,7 @@ const title = ref();
 const loading = ref(false);
 const addEnemy = async () => {
 
-  if(!selectedCharacterId.value){
+  if (!selectedCharacterId.value) {
     showError('Feind wählen (╯°□°）╯︵ ┻━┻)');
     return;
   }
@@ -34,11 +34,17 @@ const addEnemy = async () => {
 
 <template>
   <v-container>
+
     <h3>Helden</h3>
     <CharacterList
       :avatar-size="50"
       :type="'hero'"></CharacterList>
+
     <h3>Gegner</h3>
+    <CharacterList
+      :avatar-size="50"
+      :type="'enemy'"></CharacterList>
+
     <v-select
       v-model="selectedCharacterId"
       item-title="name"
@@ -59,10 +65,8 @@ const addEnemy = async () => {
       color="primary"
     >Gegner Hinzufügen
     </v-btn>
-    <br><br>
-    <CharacterList
-      :avatar-size="50"
-      :type="'enemy'"></CharacterList>
+
+
   </v-container>
 
 </template>

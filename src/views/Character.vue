@@ -305,6 +305,7 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
     await changeValue(type, res.value, true);
   }
 };
+
 </script>
 
 <template>
@@ -344,6 +345,7 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
                     :min="char.currentHp"
                     :max="char.hp as number"
                     :icon="heartIcon"
+                    tooltip="HP"
                     @click:value="openSlider('currentHp')"
                     @update="changeValue('currentHp', $event)"
                     :loading="loadings.currentHp"
@@ -355,7 +357,8 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
                   <AttributeBtns
                     :min="char.currentMp"
                     :max="char.mp"
-                    name="MP"
+                    tooltip="MP"
+                    icon="mdi-lightning-bolt"
                     @click:value="openSlider('currentMp')"
                     @update="changeValue('currentMp', $event)"
                     :loading="loadings.currentMp"
@@ -367,7 +370,8 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
                   <AttributeBtns
                     :min="char.xp ?? 0"
                     :allow-edit="editXp === true"
-                    name="XP"
+                    icon="mdi-chevron-triple-up"
+                    tooltip="XP"
                     @update="changeValue('xp', $event)"
                     :loading="loadings.xp"
                   ></AttributeBtns>
@@ -379,6 +383,7 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
                     :min="char.kills ?? 0"
                     :allow-edit="editXp === true"
                     icon="mdi-grave-stone"
+                    tooltip="Kills"
                     @update="changeValue('kills', $event)"
                     :loading="loadings.kills"
                   ></AttributeBtns>
@@ -389,6 +394,7 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
                   <AttributeBtns
                     :min="char.armor ?? 0"
                     :allow-edit="true"
+                    tooltip="Rüstung"
                     icon="mdi-shield-sword-outline"
                     @update="changeValue('armor', $event)"
                     :loading="loadings.armor"
@@ -400,6 +406,7 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
                   <AttributeBtns
                     :min="char.movement?? 0"
                     :allow-edit="true"
+                    tooltip="Bewegung"
                     icon="mdi-foot-print"
                     @update="changeValue('movement', $event)"
                     :loading="loadings.movement"
@@ -466,7 +473,7 @@ const openSlider = async (type: 'currentHp' | 'currentMp') => {
                 </div>
               </template>
 
-              <v-card v-if="allowEdit && char && !char.isEnemy">
+              <v-card v-if="allowEdit && char">
                 <v-card-title>
                   Item hinzufügen
                 </v-card-title>

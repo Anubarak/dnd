@@ -26,6 +26,7 @@ export interface Character extends BaseCharacter {
 
 export interface NewCharacter extends BaseCharacter {
   id: number | null;
+  weapons: number[]|null
 }
 
 export interface CharacterItems {

@@ -59,7 +59,7 @@ const routes = [
         component: () => import('@/views/NewCharacter.vue'),
       },
       {
-        path: 'new-enemy',
+        path: 'new-enemy/:id?',
         name: 'enemy-form',
         meta: {
           requireLogin: true,
